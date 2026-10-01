@@ -153,3 +153,22 @@ func TestAllReturnsDedupedVisible(t *testing.T) {
 		t.Errorf("All = %v", got)
 	}
 }
+
+func TestTogglePersistsAcrossReloads(t *testing.T) {
+	src := fakesource.New()
+	src.SetCalendars(calendar.Calendar{ID: "work", Title: "Work"})
+	s := New(src)
+	s.SetHidden([]string{"Work"})
+	_ = s.LoadCalendars(context.Background())
+	if !s.IsHidden("work") {
+		t.Error("initially hidden by config")
+	}
+	s.ToggleHidden("work")
+	if s.IsHidden("work") {
+		t.Error("after toggle, should be shown")
+	}
+	_ = s.LoadCalendars(context.Background())
+	if s.IsHidden("work") {
+		t.Error("after reload, toggle should persist, still shown")
+	}
+}

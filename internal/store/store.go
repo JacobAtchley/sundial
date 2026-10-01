@@ -20,14 +20,16 @@ type Store struct {
 	calendars   []calendar.Calendar
 	hiddenNames []string
 	hidden      map[string]bool // calendar IDs
+	userToggles map[string]bool // user toggles override config
 }
 
 func New(src calendar.Source) *Store {
 	return &Store{
-		src:    src,
-		days:   map[int64][]calendar.Event{},
-		fresh:  map[int64]bool{},
-		hidden: map[string]bool{},
+		src:         src,
+		days:        map[int64][]calendar.Event{},
+		fresh:       map[int64]bool{},
+		hidden:      map[string]bool{},
+		userToggles: map[string]bool{},
 	}
 }
 
@@ -73,15 +75,19 @@ func (s *Store) Calendar(id string) (calendar.Calendar, bool) {
 
 // SetHidden hides calendars whose title or ID is listed. Names that match
 // no known calendar are kept and resolved when calendars load.
+// This resets any user toggles, making SetHidden authoritative.
 func (s *Store) SetHidden(titlesOrIDs []string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.hiddenNames = slices.Clone(titlesOrIDs)
+	s.userToggles = map[string]bool{} // reset user toggles when config changes
 	s.hidden = map[string]bool{}
 	s.resolveHiddenLocked()
 }
 
 func (s *Store) resolveHiddenLocked() {
+	s.hidden = map[string]bool{}
+	// Apply config-derived names
 	for _, name := range s.hiddenNames {
 		for _, c := range s.calendars {
 			if c.ID == name || c.Title == name {
@@ -89,14 +95,25 @@ func (s *Store) resolveHiddenLocked() {
 			}
 		}
 	}
+	// Apply user toggles (they override config)
+	for id, hidden := range s.userToggles {
+		if hidden {
+			s.hidden[id] = true
+		} else {
+			delete(s.hidden, id)
+		}
+	}
 }
 
 func (s *Store) ToggleHidden(id string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Toggle: if currently hidden, make shown; if currently shown, make hidden
 	if s.hidden[id] {
+		s.userToggles[id] = false
 		delete(s.hidden, id)
 	} else {
+		s.userToggles[id] = true
 		s.hidden[id] = true
 	}
 }
