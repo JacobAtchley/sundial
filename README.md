@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/sundial-logo.svg" alt="sundial: a terminal calendar for macOS" width="480">
+</p>
+
 # sundial
 
 A terminal calendar for macOS. sundial reads the calendars macOS already syncs (iCloud, Google, Exchange, local) and shows them in month, week, and agenda views, with a command palette. Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lip Gloss](https://github.com/charmbracelet/lipgloss).
