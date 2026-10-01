@@ -54,12 +54,17 @@ func (m Model) Nav(n shared.Nav) Model {
 }
 
 func (m Model) View(ctx shared.Context) string {
-	if ctx.Width < 7 || ctx.Height < 3 {
-		return ""
-	}
 	th := ctx.Theme
 	grid := m.grid(ctx.WeekStart)
 	rows := len(grid)
+	// Minimum: 1-wide cells with separators; title + header + one line per
+	// week + rules between weeks.
+	if ctx.Width < 13 || ctx.Height < 2+rows+(rows-1) {
+		if ctx.Width <= 0 || ctx.Height <= 0 {
+			return ""
+		}
+		return th.Muted.Render(shared.Truncate("Too small for month view", ctx.Width))
+	}
 	cellW := max((ctx.Width-6)/7, 1)
 	totalW := cellW*7 + 6
 	avail := ctx.Height - 2 // title + weekday header
@@ -68,7 +73,7 @@ func (m Model) View(ctx shared.Context) string {
 	today := calendar.StartOfDay(ctx.Now)
 
 	var out []string
-	out = append(out, lipgloss.PlaceHorizontal(totalW, lipgloss.Center, th.Title.Render(m.Title())))
+	out = append(out, lipgloss.PlaceHorizontal(totalW, lipgloss.Center, th.Title.Render(shared.Truncate(m.Title(), totalW))))
 
 	var head []string
 	for _, d := range grid[0] {

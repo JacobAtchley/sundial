@@ -57,7 +57,7 @@ func TestMonthMultiDayEventOnEachDay(t *testing.T) {
 func TestMonthOverflowShowsMore(t *testing.T) {
 	ctx := shared.TestContext(80, 16) // tiny cells: 1 event line each
 	out := ansi.Strip(New(shared.TestNow).View(ctx))
-	if !strings.Contains(out, "+") {
+	if !strings.Contains(out, "more") {
 		t.Errorf("expected a +N more marker:\n%s", out)
 	}
 }
@@ -77,4 +77,26 @@ func TestMonthFitsWidthEmptyAndZero(t *testing.T) {
 		t.Error("empty month should still render the grid")
 	}
 	_ = New(shared.TestNow).View(shared.TestContext(0, 0))
+}
+
+func TestMonthTinyTerminalNeverOverflows(t *testing.T) {
+	aug := time.Date(2026, 8, 15, 0, 0, 0, 0, time.UTC) // 6-row month, Sunday start
+	for _, w := range []int{10, 12, 13, 30} {
+		for _, h := range []int{9, 12, 13, 20, 30} {
+			ctx := shared.TestContext(w, h)
+			lines := strings.Split(New(aug).View(ctx), "\n")
+			if len(lines) > h {
+				t.Errorf("%dx%d: %d lines", w, h, len(lines))
+			}
+			for _, line := range lines {
+				if lipgloss.Width(line) > w {
+					t.Errorf("%dx%d: line width %d", w, h, lipgloss.Width(line))
+				}
+			}
+		}
+	}
+	out := ansi.Strip(New(aug).View(shared.TestContext(80, 13)))
+	if !strings.Contains(out, "August 2026") {
+		t.Errorf("80x13 should render the grid:\n%s", out)
+	}
 }
