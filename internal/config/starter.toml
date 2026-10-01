@@ -1,0 +1,32 @@
+# sundial configuration
+# Every key is optional. Delete anything you don't want to change.
+
+default_view = "agenda"     # month | week | agenda
+week_start   = "sunday"     # sunday | monday
+time_format  = "12h"        # 12h | 24h
+day_start    = 8            # hour the week view scrolls to on open (0-23)
+
+[calendars]
+# Calendar titles or IDs to hide. Run `sundial calendars` to list them.
+hidden = []
+
+[agenda]
+days = 14                   # default lookahead for the agenda and CLI
+
+[theme]
+pastelize = true            # soften calendar colors to match the theme
+# Override any palette color with a hex value:
+# header    = "#C6A0F6"
+# day       = "#91D7E3"
+# today     = "#F5A97F"
+# selection = "#F5BDE6"
+# accent    = "#A6DA95"
+# muted     = "#8087A2"
+# warning   = "#ED8796"
+
+[keys]
+# Override any binding with a list of keys, for example:
+# palette = ["ctrl+k", ":"]
+# quit    = ["q", "ctrl+c"]
+# Actions: agenda close down filter help left month next open open_url
+#          palette prev quit right today up week
