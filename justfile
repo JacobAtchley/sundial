@@ -6,6 +6,7 @@ export CGO_LDFLAGS := "-mmacosx-version-min=14.0"
 plist := justfile_directory() / "Info.plist"
 version := `git describe --tags --always --dirty 2>/dev/null || echo dev`
 ldflags := "-X main.version=" + version + " -linkmode=external -extldflags '-sectcreate __TEXT __info_plist " + plist + "'"
+bindir := env_var_or_default("SUNDIAL_BIN_DIR", home_directory() / ".local" / "bin")
 
 default:
     @just --list
@@ -41,9 +42,16 @@ fmt:
     gofmt -w .
     go tool goimports -w -local github.com/JacobAtchley/sundial .
 
-# Install into $GOBIN with the embedded Info.plist
-install:
-    go install -ldflags "{{ldflags}}" ./cmd/sundial
+# Install bin/sundial into ~/.local/bin (override with SUNDIAL_BIN_DIR)
+install: build
+    mkdir -p "{{bindir}}"
+    install -m 0755 bin/sundial "{{bindir}}/sundial"
+    @echo "Installed {{bindir}}/sundial"
+    @case ":$PATH:" in *":{{bindir}}:"*) ;; *) echo "Note: {{bindir}} is not on your PATH";; esac
+
+# Remove the installed binary
+uninstall:
+    rm -f "{{bindir}}/sundial"
 
 # Record docs/demo.gif with fictional data (requires vhs)
 record: build

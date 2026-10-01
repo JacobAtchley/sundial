@@ -23,6 +23,8 @@ cd sundial
 just install
 ```
 
+This builds sundial and copies it to `~/.local/bin/sundial`. Make sure `~/.local/bin` is on your `PATH`, or pick another folder with `SUNDIAL_BIN_DIR=/some/dir just install`. `just uninstall` removes it.
+
 On first run macOS asks for calendar access for your terminal app. If you decline, enable it later in **System Settings → Privacy & Security → Calendars**.
 
 ## Usage
