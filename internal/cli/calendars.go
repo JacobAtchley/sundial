@@ -8,6 +8,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/spf13/cobra"
 
+	"github.com/JacobAtchley/sundial/internal/tui/shared"
 	"github.com/JacobAtchley/sundial/internal/tui/theme"
 )
 
@@ -37,7 +38,7 @@ func newCalendarsCommand(opts Options, f *flags) *cobra.Command {
 				if env.Store.IsHidden(c.ID) {
 					hidden = th.Muted.Render(" (hidden)")
 				}
-				fmt.Fprintf(&b, "%s %s%s %s\n", th.Dot(c.Color), c.Title, hidden, th.Muted.Render(c.Source+" · "+c.ID))
+				fmt.Fprintf(&b, "%s %s%s %s\n", th.Dot(c.Color), shared.OneLine(c.Title), hidden, th.Muted.Render(shared.OneLine(c.Source)+" · "+shared.OneLine(c.ID)))
 			}
 			_, err = lipgloss.Fprint(out, b.String())
 			return err

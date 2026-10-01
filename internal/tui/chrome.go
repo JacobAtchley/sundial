@@ -17,7 +17,10 @@ const (
 func (a *App) render() string {
 	if a.width < minWidth || a.height < minHeight {
 		msg := "Terminal too small: sundial needs at least 40×10."
-		return shared.Truncate(msg, max(a.width, len(msg)))
+		if a.width > 0 {
+			return shared.Truncate(msg, a.width)
+		}
+		return msg
 	}
 	if a.opts.Denied {
 		return clipLines(a.deniedView(), a.height)

@@ -65,6 +65,23 @@ func TestAgendaNextExtendsAndPrevMovesBack(t *testing.T) {
 	}
 }
 
+func TestAgendaNavAfterGrowthUsesConfiguredStep(t *testing.T) {
+	ctx := shared.TestContext(80, 20)
+	m := New(shared.TestNow, 14)
+	m.days = 42 // grown by scrolling
+	next := m.Nav(shared.NavNext, ctx)
+	if got := next.Range().Start.Day(); got != 15 {
+		t.Errorf("next start = %d, want 15", got)
+	}
+	if d := next.Range().End.Sub(next.Range().Start).Hours() / 24; d != 14 {
+		t.Errorf("SetDate should reset days to 14, got %.0f", d)
+	}
+	prev := m.Nav(shared.NavPrev, ctx)
+	if got := prev.Range().Start; !got.Equal(calendar.StartOfDay(shared.TestNow).AddDate(0, 0, -14)) {
+		t.Errorf("prev start = %v", got)
+	}
+}
+
 func TestAgendaExtendsAtEnd(t *testing.T) {
 	ctx := shared.TestContext(80, 20)
 	m := New(shared.TestNow, 14)

@@ -157,6 +157,38 @@ func (a *App) load() tea.Cmd {
 	return func() tea.Msg { return eventsLoadedMsg{r: r, err: st.Load(ctx, r)} }
 }
 
+// reload refreshes the calendar list and then the visible events. Callers
+// invalidate the store first. It is a no-op without a store (denied mode).
+func (a *App) reload() tea.Cmd {
+	if a.opts.Store == nil {
+		return nil
+	}
+	r := a.visibleRange()
+	a.loading = true
+	st, ctx := a.opts.Store, a.ctx
+	return func() tea.Msg {
+		if err := st.LoadCalendars(ctx); err != nil {
+			return eventsLoadedMsg{r: r, err: err}
+		}
+		return eventsLoadedMsg{r: r, err: st.Load(ctx, r)}
+	}
+}
+
+// loadSearch loads the event-search window if it is not already cached.
+// It does not raise the syncing indicator; results simply appear once the
+// load finishes.
+func (a *App) loadSearch() tea.Cmd {
+	if a.opts.Store == nil {
+		return nil
+	}
+	r := searchRange(a.now)
+	if a.opts.Store.Covers(r) {
+		return nil
+	}
+	st, ctx := a.opts.Store, a.ctx
+	return func() tea.Msg { return eventsLoadedMsg{r: r, err: st.Load(ctx, r)} }
+}
+
 func (a *App) startWatch() tea.Cmd {
 	src, ctx := a.opts.Source, a.ctx
 	return func() tea.Msg {
@@ -206,7 +238,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case storeChangedMsg:
 		a.opts.Log.Debug("calendar store changed")
 		a.opts.Store.Invalidate()
-		return a, tea.Batch(a.load(), waitChange(a.watch))
+		return a, tea.Batch(a.reload(), waitChange(a.watch))
 	case editorDoneMsg:
 		if msg.err != nil {
 			a.err = msg.err
@@ -246,7 +278,7 @@ func (a *App) handleAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case shared.ReloadMsg:
 		a.err, a.notice = nil, ""
 		a.opts.Store.Invalidate()
-		return a, a.load()
+		return a, a.reload()
 	case shared.EditConfigMsg:
 		return a, a.editConfig()
 	case shared.ShowHelpMsg:
@@ -293,6 +325,9 @@ func (a *App) handleKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return a, tea.Batch(cmd, next)
 	}
 	if a.agenda.Filtering() {
+		if k.String() == "ctrl+c" {
+			return a.quit()
+		}
 		var cmd tea.Cmd
 		a.agenda, cmd = a.agenda.UpdateFilter(k)
 		return a, cmd
@@ -325,7 +360,7 @@ func (a *App) handleKey(k tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		a.paletteOn = true
 		var cmd tea.Cmd
 		a.palette, cmd = a.palette.Open(a.commands(), a.searchEvents, a.now)
-		return a, cmd
+		return a, tea.Batch(cmd, a.loadSearch())
 	case a.keys.is(k, "help"):
 		a.helpOn = true
 	case a.keys.is(k, "month"):

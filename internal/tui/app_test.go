@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/teatest/v2"
 
@@ -214,4 +215,114 @@ func TestProgramSmoke(t *testing.T) {
 	teatest.WaitFor(t, tm.Output(), contains("October 2026"), teatest.WithDuration(3*time.Second))
 	tm.Send(key("q"))
 	tm.WaitFinished(t, teatest.WithFinalTimeout(3*time.Second))
+}
+
+// runCmd executes cmd and, for a batch, each child, in goroutines with a 1s
+// timeout so blocking commands (watch, ticks) cannot hang the test.
+func runCmd(cmd tea.Cmd) []tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	exec := func(c tea.Cmd) tea.Msg {
+		ch := make(chan tea.Msg, 1)
+		go func() { ch <- c() }()
+		select {
+		case m := <-ch:
+			return m
+		case <-time.After(time.Second):
+			return nil
+		}
+	}
+	var out []tea.Msg
+	msg := exec(cmd)
+	if b, ok := msg.(tea.BatchMsg); ok {
+		for _, c := range b {
+			if c != nil {
+				out = append(out, exec(c))
+			}
+		}
+		return out
+	}
+	return append(out, msg)
+}
+
+func feed(a *App, cmd tea.Cmd) {
+	for _, m := range runCmd(cmd) {
+		if _, ok := m.(eventsLoadedMsg); ok {
+			a.Update(m)
+		}
+	}
+}
+
+func TestReloadRefreshesCalendars(t *testing.T) {
+	for _, msg := range []tea.Msg{shared.ReloadMsg{}, storeChangedMsg{}} {
+		a, src := newTestApp(t, 100, 30)
+		a.watch = make(chan struct{})
+		src.SetCalendars(append(a.opts.Store.Calendars(), calendar.Calendar{ID: "new", Title: "New Cal"})...)
+		_, cmd := a.Update(msg)
+		feed(a, cmd)
+		if _, ok := a.opts.Store.Calendar("new"); !ok {
+			t.Errorf("%T: new calendar not loaded", msg)
+		}
+	}
+}
+
+func TestReloadCalendarsErrorReported(t *testing.T) {
+	a, src := newTestApp(t, 100, 30)
+	src.SetError(errors.New("boom"))
+	_, cmd := a.Update(shared.ReloadMsg{})
+	feed(a, cmd)
+	if a.err == nil {
+		t.Error("error from LoadCalendars/Load should be reported")
+	}
+}
+
+func TestPaletteSearchLoadsWindow(t *testing.T) {
+	src := fakesource.Demo(shared.TestNow)
+	far := shared.TestNow.AddDate(0, 0, 90)
+	src.AddEvents(calendar.Event{ID: "far", CalendarID: "work", Title: "Far Future Checkup", Start: far, End: far.Add(time.Hour)})
+	st := store.New(src)
+	ctx := context.Background()
+	_ = st.LoadCalendars(ctx)
+	_ = st.Load(ctx, calendar.Range{Start: shared.TestNow.AddDate(0, 0, -7), End: shared.TestNow.AddDate(0, 0, 7)})
+	a := New(Options{
+		Config: config.Default(), ConfigPath: "/dev/null", Store: st, Source: src,
+		Now: func() time.Time { return shared.TestNow }, Log: debuglog.Discard(),
+		Getenv: func(string) string { return "" },
+	})
+	a.Update(tea.WindowSizeMsg{Width: 100, Height: 30})
+	if len(a.searchEvents("far future")) != 0 {
+		t.Fatal("event should not be cached yet")
+	}
+	cmd := press(a, "ctrl+k")
+	feed(a, cmd)
+	if got := a.searchEvents("far future"); len(got) != 1 {
+		t.Errorf("search results = %d, want 1", len(got))
+	}
+}
+
+func TestCtrlCQuitsWhileFiltering(t *testing.T) {
+	a, _ := newTestApp(t, 100, 30)
+	press(a, "/")
+	if !a.agenda.Filtering() {
+		t.Fatal("filter not focused")
+	}
+	_, cmd := a.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	if cmd == nil {
+		t.Fatal("ctrl+c should quit")
+	}
+	if _, ok := cmd().(tea.QuitMsg); !ok {
+		t.Error("ctrl+c should return tea.Quit")
+	}
+}
+
+func TestTooSmallTruncatesToWidth(t *testing.T) {
+	a, _ := newTestApp(t, 20, 30)
+	if w := lipgloss.Width(screen(a)); w > 20 {
+		t.Errorf("message width %d exceeds terminal width 20", w)
+	}
+	a, _ = newTestApp(t, 0, 0)
+	if !strings.Contains(screen(a), "at least 40×10") {
+		t.Errorf("width 0 should keep full message: %q", screen(a))
+	}
 }

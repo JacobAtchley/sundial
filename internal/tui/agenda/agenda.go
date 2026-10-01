@@ -39,7 +39,7 @@ func (m Model) Range() calendar.Range {
 }
 
 func (m Model) SetDate(d time.Time) Model {
-	m.start, m.cursor, m.offset = calendar.StartOfDay(d), 0, 0
+	m.start, m.cursor, m.offset, m.days = calendar.StartOfDay(d), 0, 0, m.step
 	return m
 }
 
@@ -117,9 +117,9 @@ func (m Model) Nav(n shared.Nav, ctx shared.Context) Model {
 			m.cursor = i
 		}
 	case shared.NavNext:
-		return m.SetDate(m.start.AddDate(0, 0, m.days))
+		return m.SetDate(m.start.AddDate(0, 0, m.step))
 	case shared.NavPrev:
-		return m.SetDate(m.start.AddDate(0, 0, -m.days))
+		return m.SetDate(m.start.AddDate(0, 0, -m.step))
 	}
 	return m.scrollTo(ctx)
 }

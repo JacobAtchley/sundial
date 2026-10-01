@@ -43,7 +43,7 @@ func View(e calendar.Event, cal calendar.Calendar, ctx shared.Context) string {
 	}
 	link := MeetingURL(e)
 	if link != "" {
-		field("Link", link)
+		field("Link", shared.OneLine(link))
 	}
 	if e.Status == calendar.StatusTentative || e.Status == calendar.StatusCanceled {
 		field("Status", th.Warning.Render(e.Status.String()))
@@ -115,6 +115,7 @@ func MeetingURL(e calendar.Event) string {
 	}
 	for _, text := range []string{e.Location, e.Notes} {
 		for _, m := range urlRe.FindAllString(text, -1) {
+			m = strings.TrimRight(m, ".,;:!?)]}'\"")
 			if safeURL(m) {
 				return m
 			}

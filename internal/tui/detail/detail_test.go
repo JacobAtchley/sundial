@@ -71,6 +71,7 @@ func TestMeetingURL(t *testing.T) {
 		{calendar.Event{URL: "https://example.com/a"}, "https://example.com/a"},
 		{calendar.Event{URL: "file:///etc/passwd", Location: "https://example.com/zoom"}, "https://example.com/zoom"},
 		{calendar.Event{Notes: "Join: https://example.com/meet?id=1 thanks"}, "https://example.com/meet?id=1"},
+		{calendar.Event{Notes: "Join (https://example.com/meet)."}, "https://example.com/meet"},
 		{calendar.Event{URL: "zoommtg://example.com/join?confno=1"}, "zoommtg://example.com/join?confno=1"},
 		{calendar.Event{URL: "javascript:alert(1)"}, ""},
 		{calendar.Event{}, ""},

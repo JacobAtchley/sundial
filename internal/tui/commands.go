@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
@@ -42,7 +43,17 @@ func (a *App) commands() []palette.Command {
 	return cmds
 }
 
-const maxSearchResults = 20
+const (
+	maxSearchResults = 20
+	searchPastDays   = 30
+	searchFutureDays = 180
+)
+
+// searchRange is the window event search covers: [today-30d, today+180d).
+func searchRange(now time.Time) calendar.Range {
+	today := calendar.StartOfDay(now)
+	return calendar.Range{Start: today.AddDate(0, 0, -searchPastDays), End: today.AddDate(0, 0, searchFutureDays)}
+}
 
 // searchEvents matches cached event titles, upcoming events first.
 func (a *App) searchEvents(q string) []palette.Command {

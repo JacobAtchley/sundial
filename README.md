@@ -74,7 +74,7 @@ palette = ["ctrl+k", ":"]
 ## Privacy
 
 - Event data stays on your machine.
-- `--debug` writes `~/.local/state/sundial/debug.log` with event content redacted; `--debug-verbose` includes it.
+- `--debug` writes a diagnostic log to `~/.local/state/sundial/debug.log`; it never contains event content.
 
 ## Development
 

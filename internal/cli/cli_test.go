@@ -174,3 +174,20 @@ func TestUnknownSource(t *testing.T) {
 		t.Fatal("unknown source is a general error")
 	}
 }
+
+func TestCalendarsSanitizesNames(t *testing.T) {
+	src := fakesource.New()
+	src.SetCalendars(calendar.Calendar{ID: "evil", Title: "Evil\x1b]52;c;ZXZpbA==\x07", Source: "Src\x1b[31m"})
+	opts := testOptions(t)
+	opts.OpenSource = func(string) (calendar.Source, error) { return src, nil }
+	out, err := run(t, opts, "calendars")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out, "\x1b]") || strings.Contains(out, "]52;") || strings.Contains(out, "\x07") {
+		t.Errorf("escape sequence leaked: %q", out)
+	}
+	if !strings.Contains(out, "Evil") {
+		t.Errorf("title missing: %q", out)
+	}
+}
