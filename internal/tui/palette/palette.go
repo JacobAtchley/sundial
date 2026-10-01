@@ -137,9 +137,9 @@ func (m Model) View(th theme.Theme, width int) string {
 	}
 	for i := start; i < min(len(m.matches), start+maxResults); i++ {
 		c := m.matches[i]
-		keys := shared.Truncate(c.Keys, max(inner/3, 0))
+		keys := shared.Truncate(shared.OneLine(c.Keys), max(inner/3, 0))
 		titleW := max(inner-lipgloss.Width(keys)-1, 1)
-		title := shared.PadRight(" "+c.Title, titleW)
+		title := shared.PadRight(" "+shared.OneLine(c.Title), titleW)
 		if i == m.cursor {
 			title = th.Selected.Render(title)
 		}

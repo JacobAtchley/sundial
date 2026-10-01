@@ -121,3 +121,38 @@ func TestNoMatchesAndWidth(t *testing.T) {
 		}
 	}
 }
+
+func TestTitlesSanitized(t *testing.T) {
+	th := theme.New(config.Default().Theme, true)
+	search := func(q string) []Command {
+		if strings.Contains(q, "ba") {
+			return []Command{{
+				ID:    "event.bad",
+				Title: "Bad\ntitle\t\x1b[2J",
+				Keys:  "tab\x1b[0m",
+				Run:   msg(shared.QuitMsg{}),
+			}}
+		}
+		return nil
+	}
+	m := typeText(open(search), "ba")
+	out := m.View(th, 80)
+
+	// Must not contain the escape sequence that could break the terminal
+	if strings.Contains(out, "\x1b[2J") {
+		t.Error("View contains escape sequence \\x1b[2J that should be sanitized")
+	}
+
+	// Stripped view should contain normalized title
+	stripped := ansi.Strip(out)
+	if !strings.Contains(stripped, "Bad title") {
+		t.Errorf("stripped view should contain 'Bad title', got:\n%s", stripped)
+	}
+
+	// Check line count: 2 (border top/bottom) + 2 (input + rule) + len(Matches())
+	lines := strings.Split(out, "\n")
+	expectedLineCount := 4 + len(m.Matches())
+	if len(lines) != expectedLineCount {
+		t.Errorf("expected %d lines, got %d:\n%s", expectedLineCount, len(lines), strings.Join(lines, "\n"))
+	}
+}
