@@ -37,7 +37,7 @@ func View(e calendar.Event, cal calendar.Calendar, ctx shared.Context) string {
 		rows = append(rows, lipgloss.JoinHorizontal(lipgloss.Top, label, wrap(value, inner-labelW)))
 	}
 	field("When", When(e, ctx.Use24h))
-	field("Calendar", th.Dot(cal.Color)+" "+cal.Title)
+	field("Calendar", th.Dot(cal.Color)+" "+shared.OneLine(cal.Title))
 	if loc := shared.OneLine(e.Location); loc != "" {
 		field("Where", loc)
 	}
@@ -49,9 +49,13 @@ func View(e calendar.Event, cal calendar.Calendar, ctx shared.Context) string {
 		field("Status", th.Warning.Render(e.Status.String()))
 	}
 	if len(e.Attendees) > 0 {
-		field("People", strings.Join(e.Attendees, ", "))
+		cleanAttendees := make([]string, len(e.Attendees))
+		for i, a := range e.Attendees {
+			cleanAttendees[i] = shared.OneLine(a)
+		}
+		field("People", strings.Join(cleanAttendees, ", "))
 	}
-	if notes := strings.TrimSpace(e.Notes); notes != "" {
+	if notes := strings.TrimSpace(shared.CleanText(e.Notes)); notes != "" {
 		lines := strings.Split(wrap(notes, inner), "\n")
 		if len(lines) > maxNotesH {
 			lines = append(lines[:maxNotesH-1], th.Muted.Render("…"))
@@ -125,7 +129,7 @@ type OpenFailedMsg struct{ Err error }
 // sundial's own constants only.
 func OpenURLCmd(u string) tea.Cmd {
 	return func() tea.Msg {
-		if err := exec.Command("open", u).Start(); err != nil {
+		if err := exec.Command("open", u).Run(); err != nil {
 			return OpenFailedMsg{Err: err}
 		}
 		return nil

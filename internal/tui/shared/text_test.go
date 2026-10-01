@@ -1,6 +1,7 @@
 package shared
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +14,32 @@ func TestOneLineFlattensWhitespace(t *testing.T) {
 	if got := OneLine("a\nb\tc\r\n  d"); got != "a b c d" {
 		t.Errorf("got %q", got)
 	}
+}
+
+func TestOneLineRemovesEscapeSequences(t *testing.T) {
+	// OSC sequence
+	if got := OneLine("a\x1b]0;evil\x07b"); !noEscapeIn(got, "\x1b", "\x07") {
+		t.Errorf("got %q, contains escape chars", got)
+	}
+	// SGR sequence
+	if got := OneLine("x\x1b[31mred\x1b[0m"); got != "xred" {
+		t.Errorf("got %q, want %q", got, "xred")
+	}
+}
+
+func TestCleanTextPreservesNewlines(t *testing.T) {
+	if got := CleanText("line1\nline2\x00\x9b"); got != "line1\nline2" {
+		t.Errorf("got %q, want %q", got, "line1\nline2")
+	}
+}
+
+func noEscapeIn(s string, patterns ...string) bool {
+	for _, p := range patterns {
+		if strings.Contains(s, p) {
+			return false
+		}
+	}
+	return true
 }
 
 func TestTruncateByDisplayWidth(t *testing.T) {

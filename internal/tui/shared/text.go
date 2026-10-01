@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -11,9 +12,23 @@ import (
 	"github.com/JacobAtchley/sundial/internal/calendar"
 )
 
+// CleanText removes ANSI escape sequences and control characters (except \n and \t)
+// to prevent terminal injection attacks from untrusted event data.
+func CleanText(s string) string {
+	// First remove ANSI sequences
+	s = ansi.Strip(s)
+	// Then remove control characters except newline and tab
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) && r != '\n' && r != '\t' {
+			return -1 // Remove this rune
+		}
+		return r
+	}, s)
+}
+
 // OneLine collapses newlines, tabs, and runs of spaces so a title can
 // never break a row.
-func OneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
+func OneLine(s string) string { return strings.Join(strings.Fields(CleanText(s)), " ") }
 
 // Truncate cuts s to at most w display cells, adding an ellipsis.
 func Truncate(s string, w int) string {

@@ -81,3 +81,23 @@ func TestMeetingURL(t *testing.T) {
 		}
 	}
 }
+
+func TestDetailSanitizesEscapeSequences(t *testing.T) {
+	ctx := shared.TestContext(80, 30)
+	cal, _ := ctx.Store.Calendar("work")
+	e := planning()
+	// Inject escape sequences into multiple fields
+	e.Title = "Evil\x1b[2JTitle"
+	e.Notes = "Notes\x1b]52;c;ZXZpbA==\x07Evil"
+	e.Attendees = []string{"User\x1b[31m", "Normal\x1b]52;c;test\x07"}
+
+	view := View(e, cal, ctx)
+
+	// Check that escape sequences are not present in the output
+	if strings.Contains(view, "\x1b[2J") {
+		t.Error("View output contains \\x1b[2J escape sequence")
+	}
+	if strings.Contains(view, "]52;") {
+		t.Error("View output contains ]52; OSC sequence")
+	}
+}
