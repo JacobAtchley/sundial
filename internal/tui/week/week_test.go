@@ -1,6 +1,7 @@
 package week
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/exp/golden"
 
+	"github.com/JacobAtchley/sundial/internal/calendar"
 	"github.com/JacobAtchley/sundial/internal/fakesource"
 	"github.com/JacobAtchley/sundial/internal/store"
 	"github.com/JacobAtchley/sundial/internal/tui/shared"
@@ -107,5 +109,51 @@ func TestWeekNeverExceedsBounds(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestWeekScrollsToBottomPastLastEvent(t *testing.T) {
+	ctx := shared.TestContext(110, 14)
+	m := New(shared.TestNow, 8)
+	for range 60 {
+		m = m.Nav(shared.NavDown, ctx)
+	}
+	if want := rowsPerDay - m.visibleRows(ctx); m.scroll != want {
+		t.Errorf("scroll = %d, want %d", m.scroll, want)
+	}
+	if out := ansi.Strip(m.View(ctx)); !strings.Contains(out, "11pm") {
+		t.Errorf("bottom of day not reachable:\n%s", out)
+	}
+}
+
+func TestWeekHiddenLanesMarkerAndSelection(t *testing.T) {
+	day := calendar.StartOfDay(shared.TestNow)
+	src := fakesource.New()
+	src.SetCalendars(calendar.Calendar{ID: "c", Title: "C", Color: "#1BADF8"})
+	for _, title := range []string{"Alpha", "Bravo", "Charlie", "Delta"} {
+		src.AddEvents(calendar.Event{
+			ID: title, CalendarID: "c", Title: title,
+			Start: at(day, 10, 0), End: at(day, 11, 0),
+		})
+	}
+	st := store.New(src)
+	bg := context.Background()
+	_ = st.LoadCalendars(bg)
+	_ = st.Load(bg, calendar.Range{Start: day.AddDate(0, 0, -7), End: day.AddDate(0, 0, 7)})
+	ctx := shared.TestContext(110, 30)
+	ctx.Store = st
+
+	m := New(shared.TestNow, 8)
+	if out := ansi.Strip(m.View(ctx)); !strings.Contains(out, "+1") || strings.Contains(out, "Del") {
+		t.Errorf("want +1 marker and no Delta:\n%s", out)
+	}
+	for range 4 {
+		m = m.Nav(shared.NavDown, ctx)
+	}
+	if e, ok := m.SelectedEvent(ctx); !ok || e.Title != "Delta" {
+		t.Fatalf("selected = %q", e.Title)
+	}
+	if out := ansi.Strip(m.View(ctx)); !strings.Contains(out, "Del") {
+		t.Errorf("selected hidden-lane event not visible:\n%s", out)
 	}
 }

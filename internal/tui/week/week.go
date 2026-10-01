@@ -98,6 +98,12 @@ func (m Model) Nav(n shared.Nav, ctx shared.Context) Model {
 		m.selected, m.cursor = m.selected.AddDate(0, 0, 7), -1
 	case shared.NavDown:
 		if len(evs) == 0 || m.cursor >= len(evs)-1 {
+			// Past the last event: no selection (cursor == len(evs) is a
+			// "beyond" sentinel so further downs keep scrolling).
+			m.cursor = len(evs)
+			if len(evs) == 0 {
+				m.cursor = -1
+			}
 			m.scroll += 2
 		} else {
 			m.cursor++
@@ -245,11 +251,11 @@ func (m Model) column(ctx shared.Context, day time.Time, colW int, isToday bool)
 	if day.Equal(m.selected) {
 		selected = m.cursor
 	}
-	for i, e := range evs {
-		l := lanes[i]
-		if l >= maxLanes {
-			continue
-		}
+	// Events in hidden lanes (>= maxLanes) show a muted "+N" marker on their
+	// start row in the last lane, N being the hidden events starting there.
+	hiddenAt := map[int]int{}
+	draw := func(i, l int) {
+		e := evs[i]
 		c, _ := ctx.Store.Calendar(e.CalendarID)
 		style := th.Chip(c.Color)
 		if i == selected {
@@ -267,6 +273,20 @@ func (m Model) column(ctx shared.Context, day time.Time, colW int, isToday bool)
 			}
 			cells[r][l] = style.Render(shared.PadRight(text, widths[l]))
 		}
+	}
+	for i, e := range evs {
+		if lanes[i] >= maxLanes {
+			s, _ := rowSpan(e, day)
+			hiddenAt[s]++
+			continue
+		}
+		draw(i, lanes[i])
+	}
+	for r, cnt := range hiddenAt {
+		cells[r][n-1] = th.Muted.Render(shared.PadRight(" +"+strconv.Itoa(cnt), widths[n-1]))
+	}
+	if selected >= 0 && selected < len(evs) && lanes[selected] >= maxLanes {
+		draw(selected, n-1)
 	}
 	out := make([]string, rowsPerDay)
 	for r := range out {
