@@ -45,5 +45,9 @@ fmt:
 install:
     go install -ldflags "{{ldflags}}" ./cmd/sundial
 
+# Record docs/demo.gif with fictional data (requires vhs)
+record: build
+    vhs demo.tape
+
 clean:
     rm -rf bin dist
