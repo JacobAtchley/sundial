@@ -4,6 +4,8 @@ A terminal calendar for macOS. sundial reads the calendars macOS already syncs (
 
 sundial is read-only: it never creates, changes, or deletes events. It makes no network calls and collects no telemetry.
 
+![sundial demo](docs/demo.gif)
+
 ## Requirements
 
 - macOS 14 or later
