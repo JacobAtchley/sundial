@@ -30,3 +30,13 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# sundial
+bin/
+dist/
+*.log
+.env*
+/config.toml
+*.gif
+!docs/*.gif
+.DS_Store

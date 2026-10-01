@@ -104,9 +104,12 @@ sundial/
 |---|---|
 | `m` / `w` / `a` | Month / week / agenda view |
 | `t` | Jump to today |
-| `h`/`l`, `←`/`→` | Previous / next period |
-| `j`/`k`, `↑`/`↓` | Move within view |
-| `enter` | Open event detail |
+| `h`/`l`, `←`/`→` | Move left / right (day; agenda: previous/next day with events) |
+| `j`/`k`, `↑`/`↓` | Move down / up (month: week; week and agenda: event) |
+| `[`/`]`, `p`/`n` | Previous / next period |
+| `/` | Filter (agenda) |
+| `o` | Open event link (detail) |
+| `enter` | Open event detail (month: jump to agenda for that day) |
 | `esc` | Close detail / palette |
 | `ctrl+k`, `:` | Command palette |
 | `?` | Help (short / full) |
