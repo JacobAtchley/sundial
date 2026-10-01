@@ -13,8 +13,8 @@ import (
 var version = "dev"
 
 func main() {
-	root := cli.NewRootCommand(cli.Options{})
+	root := cli.NewRootCommand(cli.DefaultOptions())
 	if err := fang.Execute(context.Background(), root, fang.WithVersion(version)); err != nil {
-		os.Exit(1)
+		os.Exit(cli.ExitCode(err))
 	}
 }
