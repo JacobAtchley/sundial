@@ -60,6 +60,19 @@ func TestTodayPlain(t *testing.T) {
 	}
 }
 
+func TestTomorrowPlain(t *testing.T) {
+	out, err := run(t, testOptions(t), "tomorrow")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "Fri Oct 2") || !strings.Contains(out, "Quarterly planning sync") {
+		t.Errorf("tomorrow output missing events:\n%s", out)
+	}
+	if strings.Contains(out, "Lunch with Sam") || strings.Contains(out, "Thu Oct 1") {
+		t.Errorf("tomorrow output includes today's events:\n%s", out)
+	}
+}
+
 func TestAgendaJSON(t *testing.T) {
 	out, err := run(t, testOptions(t), "agenda", "--from", "2026-10-01", "--days", "1", "--json")
 	if err != nil {

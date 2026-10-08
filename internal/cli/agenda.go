@@ -17,13 +17,23 @@ import (
 )
 
 func newTodayCommand(opts Options, f *flags) *cobra.Command {
+	return newDayCommand(opts, f, "today", "Print today's agenda", 0)
+}
+
+func newTomorrowCommand(opts Options, f *flags) *cobra.Command {
+	return newDayCommand(opts, f, "tomorrow", "Print tomorrow's agenda", 1)
+}
+
+// newDayCommand prints a single day's agenda, offset days from today.
+func newDayCommand(opts Options, f *flags, use, short string, offset int) *cobra.Command {
 	var asJSON bool
 	cmd := &cobra.Command{
-		Use:   "today",
-		Short: "Print today's agenda",
+		Use:   use,
+		Short: short,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return printAgenda(cmd, opts, f, calendar.StartOfDay(opts.Now()), 1, asJSON)
+			start := calendar.StartOfDay(opts.Now()).AddDate(0, 0, offset)
+			return printAgenda(cmd, opts, f, start, 1, asJSON)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
