@@ -32,6 +32,7 @@ On first run macOS asks for calendar access for your terminal app. If you declin
 ```sh
 sundial                      # interactive TUI
 sundial today                # today's agenda (plain text when piped)
+sundial tomorrow             # tomorrow's agenda
 sundial agenda --days 7      # the next week
 sundial agenda --json        # machine-readable output
 sundial calendars            # calendar titles and IDs

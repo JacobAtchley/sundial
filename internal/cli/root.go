@@ -27,6 +27,7 @@ func NewRootCommand(opts Options) *cobra.Command {
 	f.register(root)
 	root.AddCommand(
 		newTodayCommand(opts, f),
+		newTomorrowCommand(opts, f),
 		newAgendaCommand(opts, f),
 		newCalendarsCommand(opts, f),
 		newConfigCommand(opts, f),
